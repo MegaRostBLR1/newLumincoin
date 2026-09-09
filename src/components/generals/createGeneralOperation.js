@@ -2,6 +2,7 @@ import {Response} from "../utils/response-utils.js";
 import {AuthTokens} from "../utils/auth-utils.js";
 import {url} from "../../config/config.js";
 import {Validation} from "../utils/validation.js";
+import {ErrorUtils} from "../utils/error-utils.js";
 import flatpickr from "flatpickr";
 import {Russian} from "flatpickr/dist/l10n/ru";
 
@@ -15,12 +16,16 @@ export class CreateGeneralOperation {
         this.commentElement = document.getElementById('commentCreateGeneralElement');
         this.btnCreate = document.getElementById('btn-create');
         this.btnCancel = document.getElementById('btn-cancel');
+        this.errorElement = document.getElementById('server-error');
         this.selects = document.querySelectorAll('select');
         this.type = AuthTokens.getToken('createBtn');
         this.accessToken = AuthTokens.getToken(AuthTokens.accessTokenKey);
 
         this.selectColorText();
-        this.automaticChoiceType().catch(error => console.error('Ошибка загрузки категорий:', error));
+        this.automaticChoiceType().catch(error => {
+            console.error('Ошибка загрузки категорий:', error);
+            ErrorUtils.show({networkError: true}, this.errorElement, 'загрузить категории');
+        });
         if (this.btnCancel) this.btnCancel.onclick = this.clickBtnCancel.bind(this);
         if (this.btnCreate) this.btnCreate.onclick = this.clickBtnCreate.bind(this);
 
@@ -44,9 +49,7 @@ export class CreateGeneralOperation {
             this.selects[1].style.color = 'black';
         };
         this.selects[1].onblur = () => {
-            if (this.selects[1].value === '') {
-                this.selects[1].style.color = '#6c757d';
-            }
+            if (this.selects[1].value === '') this.selects[1].style.color = '#6c757d';
         };
     }
 
@@ -69,13 +72,12 @@ export class CreateGeneralOperation {
             return;
         }
 
-        const urlRequest = this.selects[0].value === 'income'
-            ? url.changeIncomes
-            : url.changeExpenses;
+        const urlRequest = this.selects[0].value === 'income' ? url.changeIncomes : url.changeExpenses;
         const result = await Response.getElementsFromBackend('GET', urlRequest, this.accessToken);
 
         if (!Array.isArray(result)) {
             console.error('Некорректный ответ категорий:', result);
+            ErrorUtils.show(result, this.errorElement, 'загрузить категории');
             return;
         }
 
@@ -101,15 +103,12 @@ export class CreateGeneralOperation {
     }
 
     async clickBtnCreate() {
-        if (!Validation.validationGenerals(this.selects, this.amountElement, this.dataElement, this.commentElement)) {
-            return;
-        }
+        if (this.errorElement) this.errorElement.innerText = '';
+        if (!Validation.validationGenerals(this.selects, this.amountElement, this.dataElement, this.commentElement)) return;
 
         const selectedCategory = this.selects[1]?.options[this.selects[1].selectedIndex];
         const categoryId = Number(selectedCategory?.id);
-        if (!Number.isInteger(categoryId) || categoryId <= 0) {
-            return;
-        }
+        if (!Number.isInteger(categoryId) || categoryId <= 0) return;
 
         this.accessToken = AuthTokens.getToken(AuthTokens.accessTokenKey);
         if (!this.accessToken) {
@@ -128,6 +127,7 @@ export class CreateGeneralOperation {
         const result = await Response.getElementsFromBackend('POST', this.urlRequest, this.accessToken, body);
         if (!result || result.error) {
             console.error('Ошибка создания операции:', result);
+            ErrorUtils.show(result, this.errorElement, 'создать операцию');
             return;
         }
 
