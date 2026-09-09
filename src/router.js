@@ -19,7 +19,6 @@ export class Router {
     constructor() {
         this.titlePageElement = document.getElementById('page-title');
         this.contentElement = document.getElementById('content');
-        this.refreshInterval = null;
         this.navigationId = 0;
         this.handleDocumentClick = this.openNewRouteToClick.bind(this);
         this.handlePopState = this.activateRoute.bind(this);
@@ -155,7 +154,6 @@ export class Router {
         window.addEventListener('DOMContentLoaded', this.handlePopState, {once: true});
         window.addEventListener('popstate', this.handlePopState);
         document.addEventListener('click', this.handleDocumentClick);
-        this.refreshTokenAutomatic();
 
         if (document.readyState !== 'loading') {
             this.activateRoute().catch(error => console.error('Ошибка инициализации маршрута:', error));
@@ -313,19 +311,5 @@ export class Router {
                 await this.activateRoute();
             }
         }
-    }
-
-    refreshTokenAutomatic() {
-        if (this.refreshInterval) {
-            return;
-        }
-
-        this.refreshInterval = setInterval(() => {
-            if (AuthTokens.getToken(AuthTokens.refreshTokenKey)) {
-                AuthTokens.refreshToken().catch(error => {
-                    console.error('Автоматическое обновление токена завершилось ошибкой:', error);
-                });
-            }
-        }, 600000);
     }
 }
