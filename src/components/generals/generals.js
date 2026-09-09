@@ -14,8 +14,10 @@ export class Generals {
         this.result = [];
         this.wrapperTable = document.getElementById('wrapperGeneralTable');
         this.errorElement = document.getElementById('server-error');
+        this.categoryFilter = document.getElementById('categoryFilter');
 
         this.bindCreateButtons();
+        this.bindCategoryFilter();
         this.init().catch(error => console.error('Ошибка загрузки операций:', error));
 
         if (document.querySelectorAll('.btn-period').length) {
@@ -39,6 +41,53 @@ export class Generals {
         });
     }
 
+    bindCategoryFilter() {
+        if (this.categoryFilter && this.pagePath === '/generals') {
+            this.categoryFilter.onchange = () => this.applyCategoryFilter();
+        }
+    }
+
+    populateCategoryFilter(result) {
+        if (!this.categoryFilter || this.pagePath !== '/generals' || !Array.isArray(result)) {
+            return;
+        }
+
+        const selectedCategories = new Set(
+            Array.from(this.categoryFilter.selectedOptions).map(option => option.value)
+        );
+        const categories = [...new Set(
+            result.map(item => String(item?.category ?? '').trim() || 'без категории')
+        )].sort((a, b) => a.localeCompare(b, 'ru'));
+
+        this.categoryFilter.innerHTML = '';
+
+        categories.forEach(category => {
+            const option = document.createElement('option');
+            option.value = category;
+            option.textContent = category;
+            option.selected = selectedCategories.has(category);
+            this.categoryFilter.appendChild(option);
+        });
+    }
+
+    applyCategoryFilter() {
+        if (!this.isCurrentPage() || !Array.isArray(this.result)) {
+            return;
+        }
+
+        const selectedCategories = new Set(
+            Array.from(this.categoryFilter?.selectedOptions || []).map(option => option.value)
+        );
+        const filteredResult = selectedCategories.size === 0
+            ? this.result
+            : this.result.filter(item => {
+                const category = String(item?.category ?? '').trim() || 'без категории';
+                return selectedCategories.has(category);
+            });
+
+        this.createTableWithOperations(filteredResult);
+    }
+
     async init() {
         const result = await this.getGeneralsOperationsFromBackend();
         if (!result || !this.isCurrentPage()) {
@@ -46,6 +95,7 @@ export class Generals {
         }
 
         if (this.pagePath === '/generals') {
+            this.populateCategoryFilter(result);
             this.createTableWithOperations(result);
             this.editBtns = document.querySelectorAll('.editGeneralOperation');
             this.editBtns.forEach(button => {
@@ -153,6 +203,18 @@ export class Generals {
 
         table.append(thead, tbody);
         this.wrapperTable.appendChild(table);
+
+        if (this.pagePath === '/generals') {
+            this.editBtns = document.querySelectorAll('.editGeneralOperation');
+            this.editBtns.forEach(button => {
+                button.onclick = this.editGeneralOperation.bind(this);
+            });
+
+            this.deleteBtns = document.querySelectorAll('.deleteGeneralOperation');
+            this.deleteBtns.forEach(button => {
+                button.onclick = this.getIdClickElement.bind(this);
+            });
+        }
     }
 
     editGeneralOperation(event) {
