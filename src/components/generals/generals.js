@@ -4,6 +4,7 @@ import {url} from "../../config/config.js";
 import {Period} from "../utils/period.js";
 import {GetDataUtils} from "../utils/getData-utils.js";
 import {Main} from "../main.js";
+import {ErrorUtils} from "../utils/error-utils.js";
 
 export class Generals {
     constructor(period) {
@@ -12,6 +13,7 @@ export class Generals {
         this.period = period || `?period=${this.todayData}`;
         this.result = [];
         this.wrapperTable = document.getElementById('wrapperGeneralTable');
+        this.errorElement = document.getElementById('server-error');
 
         this.bindCreateButtons();
         this.init().catch(error => console.error('Ошибка загрузки операций:', error));
@@ -69,10 +71,12 @@ export class Generals {
         if (!Array.isArray(result)) {
             console.error('Некорректный ответ операций:', result);
             this.result = [];
+            ErrorUtils.show(result, this.errorElement, 'загрузить операции');
             return null;
         }
 
         this.result = result;
+        if (this.errorElement) this.errorElement.innerText = '';
         return result;
     }
 
@@ -153,9 +157,7 @@ export class Generals {
 
     editGeneralOperation(event) {
         const row = event.currentTarget.closest('.table-row');
-        if (!row || !this.isCurrentPage()) {
-            return;
-        }
+        if (!row || !this.isCurrentPage()) return;
 
         const rowData = {
             type: row.querySelector('.table-row-type')?.innerText || '',
