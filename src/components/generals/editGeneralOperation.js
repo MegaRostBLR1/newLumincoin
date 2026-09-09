@@ -1,7 +1,8 @@
-import {AuthTokens} from "../utils/auth-utils.js";
 import {Response} from "../utils/response-utils.js";
-import {Validation} from "../utils/validation.js";
+import {AuthTokens} from "../utils/auth-utils.js";
 import {url} from "../../config/config.js";
+import {Validation} from "../utils/validation.js";
+import {ErrorUtils} from "../utils/error-utils.js";
 import flatpickr from "flatpickr";
 import {Russian} from "flatpickr/dist/l10n/ru";
 
@@ -18,6 +19,7 @@ export class EditGeneralOperation {
         this.editCommentElement = document.getElementById('commentEditGeneralElement');
         this.saveBtn = document.getElementById('saveBtn');
         this.cancelBtn = document.getElementById('cancelBtn');
+        this.errorElement = document.getElementById('server-error');
         this.accessToken = AuthTokens.getToken(AuthTokens.accessTokenKey);
 
         if (!this.editTypeElement || !this.editCategoryElement) {
@@ -42,7 +44,10 @@ export class EditGeneralOperation {
         if (this.saveBtn) this.saveBtn.onclick = this.clickBtnEdit.bind(this);
         if (this.cancelBtn) this.cancelBtn.onclick = this.clickBtnCancel.bind(this);
 
-        this.editElement().catch(error => console.error('Ошибка загрузки операции:', error));
+        this.editElement().catch(error => {
+            console.error('Ошибка загрузки операции:', error);
+            ErrorUtils.show({networkError: true}, this.errorElement, 'загрузить операцию');
+        });
 
         if (this.editDateElement) {
             flatpickr(this.editDateElement, {
@@ -73,13 +78,12 @@ export class EditGeneralOperation {
             return;
         }
 
-        const urlRequest = this.editTypeElement.value === 'income'
-            ? url.changeIncomes
-            : url.changeExpenses;
+        const urlRequest = this.editTypeElement.value === 'income' ? url.changeIncomes : url.changeExpenses;
         const result = await Response.getElementsFromBackend('GET', urlRequest, this.accessToken);
 
         if (!Array.isArray(result)) {
             console.error('Некорректный ответ категорий:', result);
+            ErrorUtils.show(result, this.errorElement, 'загрузить категории');
             return;
         }
 
@@ -127,6 +131,7 @@ export class EditGeneralOperation {
     }
 
     async clickBtnEdit() {
+        if (this.errorElement) this.errorElement.innerText = '';
         const generalElementId = AuthTokens.getToken('idRowGenerals');
         if (!generalElementId) {
             await this.openNewRouteAutomatic(this.url);
@@ -139,9 +144,7 @@ export class EditGeneralOperation {
             this.editDateElement,
             this.editCommentElement,
             {categoryElement: this.editCategoryElement, categoryRequired: false}
-        )) {
-            return;
-        }
+        )) return;
 
         this.accessToken = AuthTokens.getToken(AuthTokens.accessTokenKey);
         if (!this.accessToken) {
@@ -158,19 +161,12 @@ export class EditGeneralOperation {
             comment: this.editCommentElement.value.trim(),
         };
 
-        if (Number.isInteger(categoryId) && categoryId > 0) {
-            body.category_id = categoryId;
-        }
+        if (Number.isInteger(categoryId) && categoryId > 0) body.category_id = categoryId;
 
-        const result = await Response.getElementsFromBackend(
-            'PUT',
-            this.urlRequest + generalElementId,
-            this.accessToken,
-            body
-        );
-
+        const result = await Response.getElementsFromBackend('PUT', this.urlRequest + generalElementId, this.accessToken, body);
         if (!result || result.error) {
             console.error('Ошибка редактирования операции:', result);
+            ErrorUtils.show(result, this.errorElement, 'редактировать операцию');
             return;
         }
 
