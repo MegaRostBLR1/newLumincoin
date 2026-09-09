@@ -2,6 +2,7 @@ import {Response} from "../utils/response-utils.js";
 import {AuthTokens} from "../utils/auth-utils.js";
 import {Validation} from "../utils/validation.js";
 import {FormUtils} from "../utils/reset-validation.js";
+import {ErrorUtils} from "../utils/error-utils.js";
 
 export class SignUp {
     constructor(openNewRouteAutomatic) {
@@ -33,12 +34,10 @@ export class SignUp {
         });
 
         if (!result || result.error || !result.user?.email) {
-            if (result?.networkError) {
-                this.errorSignUp.innerText = 'Не удалось соединиться с сервером';
-            } else if (result?.status === 409) {
-                this.errorSignUp.innerText = 'Этот email уже зарегистрирован.';
+            if (result?.status === 409) {
+                this.errorSignUp.innerText = 'Этот email уже зарегистрирован. Используйте другой email или войдите в аккаунт.';
             } else {
-                this.errorSignUp.innerText = 'Не удалось зарегистрировать пользователя';
+                ErrorUtils.show(result, this.errorSignUp, 'зарегистрировать пользователя');
             }
             return;
         }
@@ -49,9 +48,7 @@ export class SignUp {
         );
 
         if (!authResult || authResult.error) {
-            this.errorSignUp.innerText = authResult?.networkError
-                ? 'Пользователь создан, но сервер недоступен для входа'
-                : 'Пользователь создан, но автоматический вход не выполнен';
+            ErrorUtils.show(authResult, this.errorSignUp, 'автоматически войти в аккаунт');
             return;
         }
 
