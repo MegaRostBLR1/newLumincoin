@@ -33,9 +33,13 @@ export class SignUp {
         });
 
         if (!result || result.error || !result.user?.email) {
-            this.errorSignUp.innerText = result?.networkError
-                ? 'Не удалось соединиться с сервером'
-                : 'Не удалось зарегистрировать пользователя';
+            if (result?.networkError) {
+                this.errorSignUp.innerText = 'Не удалось соединиться с сервером';
+            } else if (result?.status === 409) {
+                this.errorSignUp.innerText = 'Этот email уже зарегистрирован.';
+            } else {
+                this.errorSignUp.innerText = 'Не удалось зарегистрировать пользователя';
+            }
             return;
         }
 
