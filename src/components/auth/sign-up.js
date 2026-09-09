@@ -21,7 +21,7 @@ export class SignUp {
 
         const formData = Validation.validForm(this.inputsElement);
         if (!formData) {
-            this.errorSignUp.innerText = 'Заполните все поля корректно.';
+            this.errorSignUp.innerText = 'Пожалуйста, заполните все поля корректно';
             return;
         }
 
@@ -34,11 +34,7 @@ export class SignUp {
         });
 
         if (!result || result.error || !result.user?.email) {
-            if (result?.status === 409) {
-                this.errorSignUp.innerText = 'Email уже зарегистрирован. Войдите или используйте другой.';
-            } else {
-                ErrorUtils.show(result, this.errorSignUp, 'зарегистрировать пользователя');
-            }
+            ErrorUtils.show(result, this.errorSignUp);
             return;
         }
 
@@ -48,7 +44,7 @@ export class SignUp {
         );
 
         if (!authResult || authResult.error) {
-            ErrorUtils.show(authResult, this.errorSignUp, 'войти в аккаунт');
+            ErrorUtils.show(authResult, this.errorSignUp);
             return;
         }
 
