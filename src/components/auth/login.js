@@ -1,6 +1,7 @@
 import {Validation} from "../utils/validation.js";
 import {AuthTokens} from "../utils/auth-utils.js";
 import {FormUtils} from "../utils/reset-validation.js";
+import {ErrorUtils} from "../utils/error-utils.js";
 
 export class Login {
     constructor(openNewRouteAutomatic) {
@@ -31,9 +32,11 @@ export class Login {
         );
 
         if (!result || result.error) {
-            this.errorLogin.innerText = result?.networkError
-                ? 'Не удалось соединиться с сервером'
-                : 'Неверный email или пароль';
+            if (result?.status === 401 || result?.status === 400 || result?.status === 422) {
+                this.errorLogin.innerText = 'Неверный email или пароль. Проверьте данные и попробуйте ещё раз.';
+            } else {
+                ErrorUtils.show(result, this.errorLogin, 'войти в аккаунт');
+            }
             return;
         }
 
