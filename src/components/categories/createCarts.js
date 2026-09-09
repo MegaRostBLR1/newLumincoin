@@ -1,5 +1,6 @@
 import {AuthTokens} from "../utils/auth-utils.js";
 import {Response} from "../utils/response-utils.js";
+import {ErrorUtils} from "../utils/error-utils.js";
 
 export class CreateCart {
     constructor(url, pathEdit, pathDelete, pathCreate, container, element = null) {
@@ -11,6 +12,7 @@ export class CreateCart {
         this.container = container;
         this.pagePath = location.pathname;
         this.accessToken = AuthTokens.getToken(AuthTokens.accessTokenKey);
+        this.errorElement = document.getElementById('server-error');
         this.init().catch(error => console.error('Ошибка загрузки категорий:', error));
     }
 
@@ -20,8 +22,11 @@ export class CreateCart {
 
     async init() {
         const result = await Response.getElementsFromBackend('GET', this.url, this.accessToken);
-        if (!this.isCurrentPage() || !Array.isArray(result)) {
-            if (this.isCurrentPage()) console.error('Некорректный ответ категорий:', result);
+        if (!this.isCurrentPage()) return;
+
+        if (!Array.isArray(result)) {
+            console.error('Некорректный ответ категорий:', result);
+            ErrorUtils.show(result, this.errorElement, 'загрузить категории');
             return;
         }
 
