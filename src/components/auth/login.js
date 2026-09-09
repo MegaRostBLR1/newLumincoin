@@ -21,7 +21,7 @@ export class Login {
 
         const formData = Validation.validForm(this.inputsElement);
         if (!formData) {
-            this.errorLogin.innerText = 'Заполните все поля корректно.';
+            this.errorLogin.innerText = 'Пожалуйста, заполните все поля корректно';
             return;
         }
 
@@ -32,11 +32,7 @@ export class Login {
         );
 
         if (!result || result.error) {
-            if (result?.status === 401 || result?.status === 400 || result?.status === 422) {
-                this.errorLogin.innerText = 'Неверный email или пароль.';
-            } else {
-                ErrorUtils.show(result, this.errorLogin, 'войти в аккаунт');
-            }
+            ErrorUtils.show(result, this.errorLogin);
             return;
         }
 
