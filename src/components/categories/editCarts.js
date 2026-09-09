@@ -1,5 +1,6 @@
 import {AuthTokens} from "../utils/auth-utils.js";
 import {Response} from "../utils/response-utils.js";
+import {ErrorUtils} from "../utils/error-utils.js";
 
 export class EditCarts {
     constructor(openNewRouteAutomatic, urlRequest, url) {
@@ -11,6 +12,7 @@ export class EditCarts {
         this.editElementTitle = document.getElementById('nameEditElement');
         this.saveBtn = document.getElementById('saveBtn');
         this.cancelBtn = document.getElementById('cancelEdit');
+        this.errorElement = document.getElementById('server-error');
 
         if (!this.incomeElementId || !this.editElementTitle) {
             this.openNewRouteAutomatic(this.url).catch(error => console.error('Ошибка возврата к категориям:', error));
@@ -27,6 +29,8 @@ export class EditCarts {
     }
 
     async changeElementValue() {
+        if (this.errorElement) this.errorElement.innerText = '';
+
         const accessToken = AuthTokens.getToken(AuthTokens.accessTokenKey);
         if (!accessToken) {
             await AuthTokens.handleSessionExpired();
@@ -36,6 +40,7 @@ export class EditCarts {
         const editElementTitle = this.editElementTitle.value.trim();
         if (!editElementTitle) {
             this.editElementTitle.classList.add('invalid');
+            if (this.errorElement) this.errorElement.innerText = 'Введите название категории.';
             return;
         }
 
@@ -48,6 +53,7 @@ export class EditCarts {
 
         if (!result || result.error) {
             console.error('Ошибка редактирования категории:', result);
+            ErrorUtils.show(result, this.errorElement, 'редактировать категорию');
             return;
         }
 
